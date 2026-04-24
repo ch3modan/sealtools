@@ -12,9 +12,9 @@ export async function extractTextFromPDF(
   // Dynamic import — pdf.js is only available on web
   const pdfjsLib = await import('pdfjs-dist');
 
-  // Set worker source — use CDN-hosted worker to avoid Metro bundling issues
+  // Set worker source — use unpkg to avoid Metro bundling issues and ensure version matches
   pdfjsLib.GlobalWorkerOptions.workerSrc =
-    `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+    `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
   const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
   const pdf = await loadingTask.promise;
