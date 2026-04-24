@@ -135,7 +135,9 @@ async function extractWithEpubJs(
   let globalWordIndex = 0;
 
   for (let i = 0; i < spine.items.length; i++) {
-    const section = spine.items[i];
+    const section = spine.get(i);
+    if (!section) continue;
+    
     const contents = await section.load(book.load.bind(book));
     const doc = contents.document || contents;
 
