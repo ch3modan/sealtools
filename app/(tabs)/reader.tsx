@@ -85,8 +85,8 @@ export default function ReaderScreen() {
 
   const currentBook = books.find(b => b.id === currentBookId) || books[0];
 
-  const handleChapterSelect = (chapter: any) => {
-    seekTo(chapter.startWordIndex);
+  const handleWordSelect = (wordIndex: number) => {
+    seekTo(wordIndex);
     setOverlay('none');
   };
 
@@ -226,8 +226,7 @@ export default function ReaderScreen() {
           {overlay === 'overview' && currentBook && (
             <BookOverview
               book={currentBook}
-              currentChapterIndex={currentChapter}
-              onSelectChapter={handleChapterSelect}
+              onSelectWordIndex={handleWordSelect}
               onClose={() => setOverlay('none')}
             />
           )}

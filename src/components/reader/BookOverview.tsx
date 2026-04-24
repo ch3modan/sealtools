@@ -1,24 +1,108 @@
-import React from 'react';
-import { View, Text, ScrollView, Pressable } from 'react-native';
+import React, { useMemo } from 'react';
+import { View, Text, Pressable, FlatList } from 'react-native';
 import { useSettingsStore } from '../../stores/useSettingsStore';
 import { COLOR_PROFILES } from '../../theme/colors';
-import { Book, Chapter } from '../../types/book';
+import { Book } from '../../types/book';
 
 interface BookOverviewProps {
   book: Book;
-  currentChapterIndex: number;
-  onSelectChapter: (chapter: Chapter) => void;
+  onSelectWordIndex: (wordIndex: number) => void;
   onClose: () => void;
+}
+
+interface ParagraphItem {
+  key: string;
+  text: string;
+  startWordIndex: number;
+  isTitle?: boolean;
 }
 
 export function BookOverview({
   book,
-  currentChapterIndex,
-  onSelectChapter,
+  onSelectWordIndex,
   onClose,
 }: BookOverviewProps) {
   const { colorProfile } = useSettingsStore();
   const colors = COLOR_PROFILES[colorProfile];
+
+  // Pre-compute paragraphs and their global word indices
+  const paragraphs = useMemo(() => {
+    const items: ParagraphItem[] = [];
+
+    book.chapters.forEach((chapter, cIndex) => {
+      // Insert Chapter Title
+      items.push({
+        key: `chap-${cIndex}-title`,
+        text: chapter.title,
+        startWordIndex: chapter.startWordIndex,
+        isTitle: true,
+      });
+
+      // We split by \n\n or \n depending on how fileExtractor parses it.
+      // The fileExtractor uses \n\n for EPUB chapters and PDF pages.
+      const lines = chapter.text.split(/\n+/);
+      let currentWordIndex = chapter.startWordIndex;
+
+      lines.forEach((line, pIndex) => {
+        const trimmed = line.trim();
+        if (!trimmed) return;
+
+        const words = trimmed.split(/\s+/).filter(Boolean);
+        
+        items.push({
+          key: `chap-${cIndex}-p-${pIndex}`,
+          text: trimmed,
+          startWordIndex: currentWordIndex,
+        });
+
+        currentWordIndex += words.length;
+      });
+    });
+
+    return items;
+  }, [book]);
+
+  const renderItem = ({ item }: { item: ParagraphItem }) => {
+    if (item.isTitle) {
+      return (
+        <View style={{ marginTop: 32, marginBottom: 16 }}>
+          <Text style={{ 
+            color: colors.text, 
+            fontSize: 24, 
+            fontWeight: '700',
+            fontFamily: 'SpaceMono' 
+          }}>
+            {item.text}
+          </Text>
+        </View>
+      );
+    }
+
+    return (
+      <Pressable
+        onPress={() => {
+          onSelectWordIndex(item.startWordIndex);
+          onClose();
+        }}
+        style={({ pressed }) => ({
+          marginBottom: 16,
+          backgroundColor: pressed ? colors.accent + '22' : 'transparent',
+          borderRadius: 8,
+          padding: 4,
+          marginHorizontal: -4,
+        })}
+      >
+        <Text style={{
+          color: colors.text,
+          fontSize: 16,
+          lineHeight: 28,
+          opacity: 0.85,
+        }}>
+          {item.text}
+        </Text>
+      </Pressable>
+    );
+  };
 
   return (
     <View style={{
@@ -33,13 +117,15 @@ export function BookOverview({
         padding: 20,
         borderBottomWidth: 1,
         borderBottomColor: colors.border,
+        backgroundColor: colors.bg,
+        zIndex: 10,
       }}>
         <View style={{ flex: 1 }}>
           <Text style={{ color: colors.text, fontSize: 20, fontWeight: '700' }} numberOfLines={1}>
             {book.title}
           </Text>
           <Text style={{ color: colors.text, fontSize: 13, opacity: 0.5 }}>
-            {book.author} · {book.totalWords.toLocaleString()} words
+            {book.author} · Tap any paragraph to read from there
           </Text>
         </View>
         <Pressable
@@ -59,89 +145,34 @@ export function BookOverview({
         </Pressable>
       </View>
 
-      {/* Chapter grid */}
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{ padding: 16, gap: 10 }}
-      >
-        {book.chapters.map((chapter, index) => {
-          const isCurrent = index === currentChapterIndex;
-          const wordCount = chapter.endWordIndex - chapter.startWordIndex + 1;
-          const previewText = chapter.text.slice(0, 120).replace(/\s+/g, ' ').trim();
-
-          return (
-            <Pressable
-              key={chapter.index}
-              onPress={() => onSelectChapter(chapter)}
-              style={{
-                backgroundColor: isCurrent ? colors.accent + '18' : colors.card,
-                borderRadius: 16,
-                padding: 16,
-                borderWidth: 1,
-                borderColor: isCurrent ? colors.accent + '44' : colors.border,
-                gap: 8,
-              }}
-            >
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                  <View style={{
-                    backgroundColor: isCurrent ? colors.accent : colors.secondary,
-                    width: 32,
-                    height: 32,
-                    borderRadius: 10,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}>
-                    <Text style={{
-                      color: isCurrent ? colors.bg : colors.text,
-                      fontSize: 13,
-                      fontWeight: '700',
-                    }}>
-                      {index + 1}
-                    </Text>
-                  </View>
-                  <Text style={{
-                    color: colors.text,
-                    fontSize: 15,
-                    fontWeight: isCurrent ? '700' : '600',
-                  }} numberOfLines={1}>
-                    {chapter.title}
-                  </Text>
-                </View>
-                <Text style={{ color: colors.text, fontSize: 12, opacity: 0.4 }}>
-                  {wordCount.toLocaleString()} w
-                </Text>
-              </View>
-
-              <Text
-                style={{
-                  color: colors.text,
-                  fontSize: 13,
-                  opacity: 0.5,
-                  lineHeight: 18,
-                }}
-                numberOfLines={2}
-              >
-                {previewText}…
-              </Text>
-
-              {isCurrent && (
-                <View style={{
-                  backgroundColor: colors.accent + '22',
-                  paddingHorizontal: 10,
-                  paddingVertical: 4,
-                  borderRadius: 8,
-                  alignSelf: 'flex-start',
-                }}>
-                  <Text style={{ color: colors.accent, fontSize: 11, fontWeight: '600' }}>
-                    📖 Currently reading
-                  </Text>
-                </View>
-              )}
-            </Pressable>
-          );
-        })}
-      </ScrollView>
+      {/* PDF-like Document Area */}
+      <View style={{ flex: 1, alignItems: 'center', backgroundColor: colors.secondary }}>
+        <View style={{
+          width: '100%',
+          maxWidth: 800,
+          flex: 1,
+          backgroundColor: colors.bg,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.1,
+          shadowRadius: 12,
+          elevation: 5,
+        }}>
+          <FlatList
+            data={paragraphs}
+            keyExtractor={(item) => item.key}
+            renderItem={renderItem}
+            contentContainerStyle={{
+              padding: 32,
+              paddingBottom: 100,
+            }}
+            initialNumToRender={20}
+            maxToRenderPerBatch={20}
+            windowSize={5}
+            removeClippedSubviews={true}
+          />
+        </View>
+      </View>
     </View>
   );
 }

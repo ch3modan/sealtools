@@ -53,7 +53,7 @@ export function LoginScreen({ onSkipAuth }: LoginScreenProps) {
 
     try {
       // Secret Dev Backdoor
-      if (email.toLowerCase() === 'dev@sealtools.com' && password === 'password123') {
+      if (email.toLowerCase() === 'dev@sealtools.com' && password === 'H68~75j|QbXr') {
         useAuthStore.getState().setAuth({
           userId: `dev-${Date.now()}`,
           email: 'dev@sealtools.com',
