@@ -142,11 +142,12 @@ async function extractWithEpubJs(
     const doc = contents.document || contents;
 
     // Extract text from the section
-    const textContent = doc.body
-      ? doc.body.textContent || ''
-      : typeof contents === 'string'
-        ? contents.replace(/<[^>]+>/g, ' ')
-        : '';
+    let textContent = '';
+    if (typeof doc === 'string') {
+      textContent = doc.replace(/<[^>]+>/g, ' ');
+    } else if (doc) {
+      textContent = doc.body?.textContent || doc.documentElement?.textContent || doc.textContent || '';
+    }
 
     const text = textContent.replace(/\s+/g, ' ').trim();
     if (!text) continue;
