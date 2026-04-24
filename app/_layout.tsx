@@ -46,16 +46,13 @@ function RootLayoutNav() {
   const colorProfile = useSettingsStore((s) => s.colorProfile);
   const colors = COLOR_PROFILES[colorProfile];
   const { isAuthenticated, referralVerified } = useAuthStore();
-  const [devSkipped, setDevSkipped] = useState(false);
-
-  // Show login gate unless authenticated + referral verified (or dev skipped)
-  const isGated = !devSkipped && (!isAuthenticated || !referralVerified);
+  const isGated = !isAuthenticated || !referralVerified;
 
   if (isGated) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.bg }}>
         <StatusBar style={colorProfile === 'sealLight' || colorProfile === 'sepia' || colorProfile === 'mint' ? 'dark' : 'light'} />
-        <LoginScreen onSkipAuth={() => setDevSkipped(true)} />
+        <LoginScreen />
       </View>
     );
   }

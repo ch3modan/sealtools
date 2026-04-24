@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, Pressable, TextInput, ActivityIndicator, ScrollView } from 'react-native';
 import { useSettingsStore } from '../../stores/useSettingsStore';
 import { useAuthStore } from '../../stores/useAuthStore';
+import { useAuth } from '../../hooks/useAuth';
 import { COLOR_PROFILES } from '../../theme/colors';
 import { SealLogo } from '../seal/SealLogo';
 
@@ -19,7 +20,8 @@ type AuthMode = 'login' | 'signup';
 export function LoginScreen({ onSkipAuth }: LoginScreenProps) {
   const { colorProfile } = useSettingsStore();
   const colors = COLOR_PROFILES[colorProfile];
-  const { isLoading } = useAuthStore();
+  const { isLoading: isStoreLoading } = useAuthStore();
+  const { signup, login: apiLogin } = useAuth();
 
   const [mode, setMode] = useState<AuthMode>('login');
   const [email, setEmail] = useState('');
@@ -50,17 +52,24 @@ export function LoginScreen({ onSkipAuth }: LoginScreenProps) {
     setLoading(true);
 
     try {
-      // In production, these call the Azure Functions API.
-      // For dev, simulate successful auth.
-      await new Promise(r => setTimeout(r, 800));
+      // Secret Dev Backdoor
+      if (email.toLowerCase() === 'dev@sealtools.com' && password === 'password123') {
+        useAuthStore.getState().setAuth({
+          userId: `dev-${Date.now()}`,
+          email: 'dev@sealtools.com',
+          displayName: 'Developer',
+          accessToken: `dev-session-${Date.now()}`,
+        });
+        useAuthStore.getState().setReferralVerified(true);
+        return;
+      }
 
-      useAuthStore.getState().setAuth({
-        userId: `user-${Date.now()}`,
-        email: email.toLowerCase(),
-        displayName: displayName || email.split('@')[0],
-        accessToken: `session-${Date.now()}`,
-      });
-      useAuthStore.getState().setReferralVerified(true);
+      // Actual Production API calls
+      if (mode === 'login') {
+        await apiLogin(email, password);
+      } else {
+        await signup(email, password, displayName, referralCode);
+      }
     } catch (err: any) {
       setError(err.message || 'Authentication failed');
     } finally {
@@ -212,14 +221,6 @@ export function LoginScreen({ onSkipAuth }: LoginScreenProps) {
             </Text>
           )}
         </View>
-
-        {onSkipAuth && (
-          <Pressable onPress={onSkipAuth}>
-            <Text style={{ color: colors.text, fontSize: 13, opacity: 0.25, textAlign: 'center' }}>
-              Skip (dev mode)
-            </Text>
-          </Pressable>
-        )}
 
         <Text style={{ color: colors.text, fontSize: 11, opacity: 0.15 }}>
           autisticseal.tech · open source
