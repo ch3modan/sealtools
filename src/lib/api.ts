@@ -4,7 +4,7 @@
  * In development, we proxy to the local Functions runtime.
  */
 
-const API_BASE = '/api';
+const API_BASE = process.env.EXPO_PUBLIC_API_URL || '/api';
 
 async function request<T>(
   path: string,
