@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Book } from '../types/book';
 
 interface LibraryState {
@@ -8,13 +10,21 @@ interface LibraryState {
   getBook: (id: string) => Book | undefined;
 }
 
-export const useLibraryStore = create<LibraryState>((set, get) => ({
-  books: [],
+export const useLibraryStore = create<LibraryState>()(
+  persist(
+    (set, get) => ({
+      books: [],
 
-  addBook: (book) => set((s) => ({ books: [...s.books, book] })),
+      addBook: (book) => set((s) => ({ books: [...s.books, book] })),
 
-  removeBook: (id) =>
-    set((s) => ({ books: s.books.filter((b) => b.id !== id) })),
+      removeBook: (id) =>
+        set((s) => ({ books: s.books.filter((b) => b.id !== id) })),
 
-  getBook: (id) => get().books.find((b) => b.id === id),
-}));
+      getBook: (id) => get().books.find((b) => b.id === id),
+    }),
+    {
+      name: 'sealtools-library',
+      storage: createJSONStorage(() => AsyncStorage),
+    }
+  )
+);
