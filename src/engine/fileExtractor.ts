@@ -9,10 +9,7 @@ export async function extractTextFromPDF(
   arrayBuffer: ArrayBuffer,
   pagesPerChapter: number = 10
 ): Promise<{ chapters: Chapter[]; totalWords: number }> {
-  // Dynamic import — pdf.js is only available on web
   const pdfjsLib = await import('pdfjs-dist');
-
-  // Set worker source — use unpkg to avoid Metro bundling issues and ensure version matches
   pdfjsLib.GlobalWorkerOptions.workerSrc =
     `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
@@ -25,22 +22,49 @@ export async function extractTextFromPDF(
     const page = await pdf.getPage(pageNum);
     const textContent = await page.getTextContent();
 
-    const pageText = textContent.items
-      .map((item: any) => item.str)
-      .join(' ')
-      .replace(/\s+/g, ' ')
+    let pageText = '';
+    let lastY = null;
+
+    for (const item of textContent.items as any[]) {
+      const str = item.str.trim();
+      if (!str) continue;
+
+      const y = item.transform[5];
+      
+      if (lastY !== null) {
+        const diff = Math.abs(y - lastY);
+        // If Y difference is large, it's likely a new paragraph
+        if (diff > 18) {
+          pageText += '\n\n';
+        } else if (diff > 5) {
+          // Normal line break, just add a space to continue the paragraph
+          pageText += ' ';
+        } else {
+          // Same line
+          pageText += ' ';
+        }
+      }
+      
+      pageText += str;
+      lastY = y;
+    }
+
+    const cleanedPage = pageText
+      .replace(/[ \t\r]+/g, ' ')
+      .replace(/\n{3,}/g, '\n\n')
       .trim();
 
-    pageTexts.push(pageText);
+    if (cleanedPage) {
+      pageTexts.push(cleanedPage);
+    }
   }
 
-  // Group pages into chapters
   const chapters: Chapter[] = [];
   let globalWordIndex = 0;
 
   for (let i = 0; i < pageTexts.length; i += pagesPerChapter) {
     const chunkPages = pageTexts.slice(i, i + pagesPerChapter);
-    const chapterText = chunkPages.join('\n\n');
+    const chapterText = chunkPages.join('\n\n\n');
     const words = chapterText.split(/\s+/).filter(Boolean);
 
     const startPage = i + 1;
@@ -60,39 +84,19 @@ export async function extractTextFromPDF(
   return { chapters, totalWords: globalWordIndex };
 }
 
-/**
- * Extract text from an EPUB file.
- * Uses a simple approach: parse the EPUB as a ZIP, find HTML content files,
- * and strip HTML tags to get plain text.
- */
 export async function extractTextFromEPUB(
   arrayBuffer: ArrayBuffer
 ): Promise<{ chapters: Chapter[]; totalWords: number }> {
-  // EPUBs are ZIP files containing XHTML content
-  // We'll use a simple approach without external EPUB library:
-  // 1. Parse the ZIP
-  // 2. Find content files from the OPF manifest
-  // 3. Extract text from HTML
-
-  // For web, we can use the built-in DecompressionStream or a simple approach
-  // For now, we'll use a basic HTML text extraction from the raw content
-
   try {
-    // Try to load epub.js if available
     const ePub = await import('epubjs').catch(() => null);
-
     if (ePub) {
       return extractWithEpubJs(arrayBuffer, ePub.default);
     }
-  } catch {
-    // epub.js not available — fall through to basic extraction
-  }
+  } catch {}
 
-  // Fallback: treat the entire content as text
   const decoder = new TextDecoder('utf-8');
   const text = decoder.decode(arrayBuffer);
 
-  // Try to extract text between HTML body tags
   const bodyMatches = text.match(/<body[^>]*>([\s\S]*?)<\/body>/gi) || [];
   const extractedTexts = bodyMatches.map((body) =>
     body
@@ -102,7 +106,7 @@ export async function extractTextFromEPUB(
       .replace(/&lt;/g, '<')
       .replace(/&gt;/g, '>')
       .replace(/&quot;/g, '"')
-      .replace(/\s+/g, ' ')
+      .replace(/[ \t\r]+/g, ' ')
       .trim()
   );
 
@@ -141,15 +145,32 @@ async function extractWithEpubJs(
     const contents = await section.load(book.load.bind(book));
     const doc = contents.document || contents;
 
-    // Extract text from the section
     let textContent = '';
+    
     if (typeof doc === 'string') {
       textContent = doc.replace(/<[^>]+>/g, ' ');
+    } else if (doc && doc.body) {
+      // Inject newlines into block elements to preserve true paragraph structure
+      const blockElements = doc.body.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li, blockquote, div');
+      blockElements.forEach((el: Element) => {
+        el.prepend(doc.createTextNode('\n\n'));
+      });
+      
+      const brElements = doc.body.querySelectorAll('br');
+      brElements.forEach((el: Element) => {
+        el.replaceWith(doc.createTextNode('\n'));
+      });
+
+      const rawText = doc.body.textContent || '';
+      textContent = rawText
+        .replace(/[ \t\r]+/g, ' ') // collapse horizontal whitespace
+        .replace(/\s*\n\s*/g, '\n') // clean up spaces around newlines
+        .replace(/\n{3,}/g, '\n\n'); // cap consecutive newlines at 2
     } else if (doc) {
-      textContent = doc.body?.textContent || doc.documentElement?.textContent || doc.textContent || '';
+      textContent = doc.textContent || '';
     }
 
-    const text = textContent.replace(/\s+/g, ' ').trim();
+    const text = textContent.trim();
     if (!text) continue;
 
     const words = text.split(/\s+/).filter(Boolean);
