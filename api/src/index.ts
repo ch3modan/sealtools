@@ -1,6 +1,6 @@
 import { app } from '@azure/functions';
 import { signup, login } from './functions/auth';
-import { uploadBook, getBooks, getBookById, saveBookText } from './functions/books';
+import { uploadBook, getBooks, getBookById, saveBookText, deleteBook } from './functions/books';
 import { getProgress, syncProgress } from './functions/progress';
 import { getStreaks, syncStreaks } from './functions/streaks';
 
@@ -46,6 +46,13 @@ app.http('saveBookText', {
   authLevel: 'anonymous',
   route: 'books/{id}/text',
   handler: saveBookText,
+});
+
+app.http('deleteBook', {
+  methods: ['DELETE'],
+  authLevel: 'anonymous',
+  route: 'books/{id}',
+  handler: deleteBook,
 });
 
 // ===== Progress =====

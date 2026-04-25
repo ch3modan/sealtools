@@ -5,6 +5,8 @@ import { Platform } from 'react-native';
 import { useLibraryStore } from '../stores/useLibraryStore';
 import { extractTextFromPDF, extractTextFromEPUB } from '../engine/fileExtractor';
 import { Book } from '../types/book';
+import { useAuthStore } from '../stores/useAuthStore';
+import * as api from '../lib/api';
 
 interface ImportState {
   isImporting: boolean;
@@ -89,9 +91,40 @@ export function useBookImport() {
         return null;
       }
 
-      // Create book record
-      const bookId = `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      // Check if user is authenticated for cloud sync
+      const authState = useAuthStore.getState();
+      const userId = authState.user?.userId;
+      
+      let bookId = `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       const titleGuess = fileName.replace(/\.(pdf|epub)$/i, '').replace(/[-_]/g, ' ');
+
+      if (userId) {
+        try {
+          setState({ isImporting: true, progress: 'Syncing to cloud...', error: null });
+          const metaRes = await api.uploadBookMetadata(userId, {
+            title: titleGuess,
+            author: 'Unknown',
+            fileType,
+            fileName,
+            fileSize: file.size || arrayBuffer.byteLength,
+          });
+          
+          bookId = metaRes.bookId;
+
+          // Upload the extracted text to Cosmos DB
+          await api.saveBookText(bookId, userId, {
+            extractedText: chapters.map((c: any) => c.text).join('\n\n'),
+            chapters,
+            totalWords,
+          });
+
+          // Uploading the raw file to Blob Storage could be done here using metaRes.uploadUrl
+          // For now, we only need the text in Cosmos DB for reading across devices.
+        } catch (e) {
+          console.error('Failed to sync to cloud:', e);
+          // If cloud sync fails, we still proceed with local creation
+        }
+      }
 
       const book: Book = {
         id: bookId,

@@ -87,6 +87,15 @@ export async function saveBookText(bookId: string, userId: string, data: {
   });
 }
 
+export async function deleteBook(bookId: string, userId: string) {
+  return request<{ message: string }>(
+    `/books/${bookId}?userId=${encodeURIComponent(userId)}`,
+    {
+      method: 'DELETE',
+    }
+  );
+}
+
 // ===== Progress =====
 export async function getProgress(userId: string, bookId?: string) {
   const params = new URLSearchParams({ userId });

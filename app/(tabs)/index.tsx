@@ -9,6 +9,9 @@ import { COLOR_PROFILES } from '../../src/theme/colors';
 import { SealLogo } from '../../src/components/seal/SealLogo';
 import { useBookImport } from '../../src/hooks/useBookImport';
 import { useRouter } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { useAuthStore } from '../../src/stores/useAuthStore';
+import * as api from '../../src/lib/api';
 
 const DEMO_TEXT = `The ocean stretched endlessly before her, a vast canvas of blues and greens that seemed to breathe with the rhythm of the earth itself. She stood at the water's edge, feeling the cold foam lap at her bare feet, each wave a gentle invitation to wade deeper.
 
@@ -27,6 +30,42 @@ export default function LibraryScreen() {
   const { currentStreak, todayWordsRead, dailyGoal } = useStreakStore();
   const { pickAndImportFile, isImporting, progress, error } = useBookImport();
   const router = useRouter();
+  const { user } = useAuthStore();
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  useEffect(() => {
+    async function syncCloud() {
+      if (!user?.userId) return;
+      setIsSyncing(true);
+      try {
+        const { books: cloudBooks } = await api.getBooks(user.userId);
+        
+        // Merge cloud books with local books. 
+        // If a book exists in the cloud, it overrides the local one, but we keep local-only books (like the demo).
+        const localBooksMap = new Map(books.map(b => [b.id, b]));
+        
+        cloudBooks.forEach((cb: any) => {
+          localBooksMap.set(cb.id, {
+            id: cb.id,
+            title: cb.title,
+            author: cb.author,
+            fileType: cb.fileType,
+            totalWords: cb.totalWords || 0,
+            chapters: cb.chapters || [],
+            addedAt: cb.createdAt,
+          });
+        });
+
+        useLibraryStore.getState().setBooks(Array.from(localBooksMap.values()));
+      } catch (e) {
+        console.error('Failed to sync cloud books:', e);
+      } finally {
+        setIsSyncing(false);
+      }
+    }
+
+    syncCloud();
+  }, [user?.userId]);
 
   const loadDemoBook = () => {
     const demoBook = {
@@ -156,9 +195,12 @@ export default function LibraryScreen() {
 
         {/* Library section */}
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Text style={{ color: colors.text, fontSize: 20, fontWeight: '700' }}>
-            My Library
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Text style={{ color: colors.text, fontSize: 20, fontWeight: '700' }}>
+              My Library
+            </Text>
+            {isSyncing && <ActivityIndicator size="small" color={colors.accent} />}
+          </View>
           <Pressable
             onPress={handleImport}
             disabled={isImporting}

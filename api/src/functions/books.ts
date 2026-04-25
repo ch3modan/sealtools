@@ -186,3 +186,32 @@ export async function saveBookText(
     return { status: 500, jsonBody: { error: 'Internal server error' } };
   }
 }
+
+/**
+ * DELETE /api/books/:id
+ * Query: ?userId=xxx
+ */
+export async function deleteBook(
+  request: HttpRequest,
+  context: InvocationContext
+): Promise<HttpResponseInit> {
+  try {
+    const bookId = request.params.id;
+    const userId = request.query.get('userId');
+
+    if (!bookId || !userId) {
+      return { status: 400, jsonBody: { error: 'Missing bookId or userId' } };
+    }
+
+    const container = await getBooksContainer();
+    await container.item(bookId, userId).delete();
+
+    return {
+      status: 200,
+      jsonBody: { message: 'Book deleted successfully' },
+    };
+  } catch (error: any) {
+    context.error('deleteBook error:', error);
+    return { status: 500, jsonBody: { error: 'Internal server error' } };
+  }
+}
