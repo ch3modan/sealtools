@@ -26,10 +26,10 @@ export const useLibraryStore = create<LibraryState>()(
         set((s) => ({ books: s.books.filter((b) => b.id !== id) }));
         
         // Cloud sync
-        const user = useAuthStore.getState().user;
-        if (user && !id.startsWith('demo-')) {
+        const userId = useAuthStore.getState().userId;
+        if (userId && !id.startsWith('demo-')) {
           try {
-            await api.deleteBook(id, user.userId);
+            await api.deleteBook(id, userId);
           } catch (e) {
             console.error('Failed to delete book from cloud:', e);
           }

@@ -30,30 +30,30 @@ export default function LibraryScreen() {
   const { currentStreak, todayWordsRead, dailyGoal } = useStreakStore();
   const { pickAndImportFile, isImporting, progress, error } = useBookImport();
   const router = useRouter();
-  const { user } = useAuthStore();
+  const { userId } = useAuthStore();
   const [isSyncing, setIsSyncing] = useState(false);
 
   // Filter books to only show the ones belonging to the current user (or demo books)
   const userBooks = books.filter(b => 
-    (user && b.userId === user.userId) || 
-    (!user && !b.userId) || 
+    (userId && b.userId === userId) || 
+    (!userId && !b.userId) || 
     b.id.startsWith('demo-')
   );
 
   useEffect(() => {
     async function syncCloud() {
-      if (!user?.userId) return;
+      if (!userId) return;
       setIsSyncing(true);
       try {
-        const { books: cloudBooks } = await api.getBooks(user.userId);
+        const { books: cloudBooks } = await api.getBooks(userId);
         
         // 1. Keep all books that DO NOT belong to the current user
-        const otherUsersBooks = books.filter(b => b.userId !== user.userId && !b.id.startsWith('demo-'));
+        const otherUsersBooks = books.filter(b => b.userId !== userId && !b.id.startsWith('demo-'));
         
         // 2. Prepare a map of books for the CURRENT user
         // We start with existing local books for this user, then overwrite with cloud data
         const currentUserBooksMap = new Map(
-          books.filter(b => b.userId === user.userId).map(b => [b.id, b])
+          books.filter(b => b.userId === userId).map(b => [b.id, b])
         );
         
         cloudBooks.forEach((cb: any) => {
@@ -65,7 +65,7 @@ export default function LibraryScreen() {
             totalWords: cb.totalWords || 0,
             chapters: cb.chapters || [],
             addedAt: cb.createdAt,
-            userId: user.userId, // Explicitly set the owner
+            userId: userId, // Explicitly set the owner
           });
         });
 
@@ -88,7 +88,7 @@ export default function LibraryScreen() {
     }
 
     syncCloud();
-  }, [user?.userId]);
+  }, [userId]);
 
   const loadDemoBook = () => {
     const demoBook = {

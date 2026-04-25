@@ -93,7 +93,7 @@ export function useBookImport() {
 
       // Check if user is authenticated for cloud sync
       const authState = useAuthStore.getState();
-      const userId = authState.user?.userId;
+      const userId = authState.userId;
       
       let bookId = `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       const titleGuess = fileName.replace(/\.(pdf|epub)$/i, '').replace(/[-_]/g, ' ');
