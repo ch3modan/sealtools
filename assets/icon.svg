@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#2d3748" rx="100" ry="100"/>
+  <!-- Head -->
+  <ellipse cx="256" cy="280" rx="180" ry="140" fill="#e2e8f0" />
+  <!-- Muzzle area -->
+  <ellipse cx="256" cy="320" rx="90" ry="60" fill="#cbd5e1" />
+  <!-- Eyes -->
+  <circle cx="180" cy="240" r="24" fill="#1a202c" />
+  <circle cx="332" cy="240" r="24" fill="#1a202c" />
+  <!-- Eye highlights -->
+  <circle cx="172" cy="232" r="6" fill="#ffffff" />
+  <circle cx="324" cy="232" r="6" fill="#ffffff" />
+  <!-- Nose -->
+  <path d="M 236 290 Q 256 270 276 290 L 266 310 Q 256 320 246 310 Z" fill="#1a202c" />
+  <!-- Mouth -->
+  <path d="M 256 310 Q 220 360 190 320" fill="none" stroke="#1a202c" stroke-width="8" stroke-linecap="round" />
+  <path d="M 256 310 Q 292 360 322 320" fill="none" stroke="#1a202c" stroke-width="8" stroke-linecap="round" />
+  <!-- Whiskers Left -->
+  <line x1="160" y1="300" x2="80" y2="290" stroke="#718096" stroke-width="6" stroke-linecap="round" />
+  <line x1="160" y1="320" x2="70" y2="320" stroke="#718096" stroke-width="6" stroke-linecap="round" />
+  <line x1="170" y1="340" x2="90" y2="360" stroke="#718096" stroke-width="6" stroke-linecap="round" />
+  <!-- Whiskers Right -->
+  <line x1="352" y1="300" x2="432" y2="290" stroke="#718096" stroke-width="6" stroke-linecap="round" />
+  <line x1="352" y1="320" x2="442" y2="320" stroke="#718096" stroke-width="6" stroke-linecap="round" />
+  <line x1="342" y1="340" x2="422" y2="360" stroke="#718096" stroke-width="6" stroke-linecap="round" />
+</svg>
