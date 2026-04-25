@@ -4,6 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSettingsStore } from '../../src/stores/useSettingsStore';
 import { COLOR_PROFILES, ColorProfileName } from '../../src/theme/colors';
 import { FONT_OPTIONS, FontFamilyName, TYPOGRAPHY_RANGES } from '../../src/theme/fonts';
+import { useAuthStore } from '../../src/stores/useAuthStore';
+import { useLibraryStore } from '../../src/stores/useLibraryStore';
 
 function SettingSection({ title, children, colors }: { title: string; children: React.ReactNode; colors: any }) {
   return (
@@ -62,6 +64,13 @@ export default function SettingsScreen() {
   const settings = useSettingsStore();
   const { updateSetting, colorProfile } = settings;
   const colors = COLOR_PROFILES[colorProfile];
+  const { logout, displayName, email } = useAuthStore();
+  const { clearLibrary } = useLibraryStore();
+
+  const handleLogout = () => {
+    clearLibrary();
+    logout();
+  };
 
   const profileKeys = Object.keys(COLOR_PROFILES) as ColorProfileName[];
   const fontKeys = Object.keys(FONT_OPTIONS) as FontFamilyName[];
@@ -72,6 +81,28 @@ export default function SettingsScreen() {
         <Text style={{ color: colors.text, fontSize: 26, fontWeight: '800' }}>
           Settings ⚙️
         </Text>
+
+        {/* Account Info */}
+        <SettingSection title="👤 Account" colors={colors}>
+          <View style={{ gap: 4 }}>
+            <Text style={{ color: colors.text, fontSize: 16, fontWeight: '700' }}>{displayName || 'Reader'}</Text>
+            <Text style={{ color: colors.text, fontSize: 13, opacity: 0.6 }}>{email}</Text>
+          </View>
+          <Pressable
+            onPress={handleLogout}
+            style={{
+              backgroundColor: '#FF6B6B22',
+              paddingVertical: 12,
+              borderRadius: 12,
+              alignItems: 'center',
+              borderWidth: 1,
+              borderColor: '#FF6B6B44',
+              marginTop: 8,
+            }}
+          >
+            <Text style={{ color: '#FF6B6B', fontWeight: '700' }}>Log Out</Text>
+          </Pressable>
+        </SettingSection>
 
         {/* Color Profiles */}
         <SettingSection title="🎨 Appearance" colors={colors}>
