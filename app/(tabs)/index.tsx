@@ -57,15 +57,18 @@ export default function LibraryScreen() {
         );
         
         cloudBooks.forEach((cb: any) => {
+          const existingLocal = currentUserBooksMap.get(cb.id);
+          
           currentUserBooksMap.set(cb.id, {
             id: cb.id,
             title: cb.title,
             author: cb.author,
             fileType: cb.fileType,
-            totalWords: cb.totalWords || 0,
-            chapters: cb.chapters || [],
+            // Prefer local chapters if cloud is empty (avoids wiping data if saveBookText failed)
+            totalWords: cb.totalWords || existingLocal?.totalWords || 0,
+            chapters: (cb.chapters && cb.chapters.length > 0) ? cb.chapters : (existingLocal?.chapters || []),
             addedAt: cb.createdAt,
-            userId: userId, // Explicitly set the owner
+            userId: userId,
           });
         });
 

@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface AuthState {
   isAuthenticated: boolean;
@@ -22,38 +24,46 @@ interface AuthState {
   logout: () => void;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
-  isAuthenticated: false,
-  isLoading: false,
-  userId: null,
-  email: null,
-  displayName: null,
-  accessToken: null,
-  referralVerified: false,
-  error: null,
-
-  setAuth: (data) =>
-    set({
-      isAuthenticated: true,
-      userId: data.userId,
-      email: data.email,
-      displayName: data.displayName,
-      accessToken: data.accessToken,
-      error: null,
-    }),
-
-  setReferralVerified: (verified) => set({ referralVerified: verified }),
-  setLoading: (loading) => set({ isLoading: loading }),
-  setError: (error) => set({ error }),
-
-  logout: () =>
-    set({
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set) => ({
       isAuthenticated: false,
+      isLoading: false,
       userId: null,
       email: null,
       displayName: null,
       accessToken: null,
       referralVerified: false,
       error: null,
+
+      setAuth: (data) =>
+        set({
+          isAuthenticated: true,
+          userId: data.userId,
+          email: data.email,
+          displayName: data.displayName,
+          accessToken: data.accessToken,
+          error: null,
+        }),
+
+      setReferralVerified: (verified) => set({ referralVerified: verified }),
+      setLoading: (loading) => set({ isLoading: loading }),
+      setError: (error) => set({ error }),
+
+      logout: () =>
+        set({
+          isAuthenticated: false,
+          userId: null,
+          email: null,
+          displayName: null,
+          accessToken: null,
+          referralVerified: false,
+          error: null,
+        }),
     }),
-}));
+    {
+      name: 'sealtools-auth',
+      storage: createJSONStorage(() => AsyncStorage),
+    }
+  )
+);
