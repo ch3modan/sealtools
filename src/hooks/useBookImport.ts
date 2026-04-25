@@ -134,6 +134,7 @@ export function useBookImport() {
         totalWords,
         chapters,
         addedAt: new Date().toISOString(),
+        userId: userId || undefined,
       };
 
       addBook(book);

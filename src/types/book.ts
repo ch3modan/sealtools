@@ -7,6 +7,7 @@ export interface Book {
   totalWords: number;
   chapters: Chapter[];
   addedAt: string; // ISO date
+  userId?: string; // Owner of the book for multi-user sync
   blobUri?: string; // Azure Blob Storage URI
 }
 

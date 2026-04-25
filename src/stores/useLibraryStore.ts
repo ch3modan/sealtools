@@ -11,6 +11,7 @@ interface LibraryState {
   removeBook: (id: string) => Promise<void>;
   getBook: (id: string) => Book | undefined;
   setBooks: (books: Book[]) => void;
+  clearLibrary: () => void;
 }
 
 export const useLibraryStore = create<LibraryState>()(
@@ -38,6 +39,7 @@ export const useLibraryStore = create<LibraryState>()(
       getBook: (id) => get().books.find((b) => b.id === id),
 
       setBooks: (books) => set({ books }),
+      clearLibrary: () => set({ books: [] }),
     }),
     {
       name: 'sealtools-library',

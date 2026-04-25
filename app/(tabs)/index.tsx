@@ -33,6 +33,13 @@ export default function LibraryScreen() {
   const { user } = useAuthStore();
   const [isSyncing, setIsSyncing] = useState(false);
 
+  // Filter books to only show the ones belonging to the current user (or demo books)
+  const userBooks = books.filter(b => 
+    (user && b.userId === user.userId) || 
+    (!user && !b.userId) || 
+    b.id.startsWith('demo-')
+  );
+
   useEffect(() => {
     async function syncCloud() {
       if (!user?.userId) return;
@@ -40,12 +47,17 @@ export default function LibraryScreen() {
       try {
         const { books: cloudBooks } = await api.getBooks(user.userId);
         
-        // Merge cloud books with local books. 
-        // If a book exists in the cloud, it overrides the local one, but we keep local-only books (like the demo).
-        const localBooksMap = new Map(books.map(b => [b.id, b]));
+        // 1. Keep all books that DO NOT belong to the current user
+        const otherUsersBooks = books.filter(b => b.userId !== user.userId && !b.id.startsWith('demo-'));
+        
+        // 2. Prepare a map of books for the CURRENT user
+        // We start with existing local books for this user, then overwrite with cloud data
+        const currentUserBooksMap = new Map(
+          books.filter(b => b.userId === user.userId).map(b => [b.id, b])
+        );
         
         cloudBooks.forEach((cb: any) => {
-          localBooksMap.set(cb.id, {
+          currentUserBooksMap.set(cb.id, {
             id: cb.id,
             title: cb.title,
             author: cb.author,
@@ -53,10 +65,21 @@ export default function LibraryScreen() {
             totalWords: cb.totalWords || 0,
             chapters: cb.chapters || [],
             addedAt: cb.createdAt,
+            userId: user.userId, // Explicitly set the owner
           });
         });
 
-        useLibraryStore.getState().setBooks(Array.from(localBooksMap.values()));
+        // 3. Combine them back together
+        const allBooks = [
+          ...otherUsersBooks,
+          ...Array.from(currentUserBooksMap.values()),
+          ...books.filter(b => b.id.startsWith('demo-')) // Keep demo books
+        ];
+
+        // Deduplicate demo books
+        const uniqueBooks = Array.from(new Map(allBooks.map(b => [b.id, b])).values());
+        
+        useLibraryStore.getState().setBooks(uniqueBooks);
       } catch (e) {
         console.error('Failed to sync cloud books:', e);
       } finally {
@@ -220,15 +243,11 @@ export default function LibraryScreen() {
                 <ActivityIndicator size="small" color={colors.bg} />
                 <Text style={{ color: colors.bg, fontSize: 13, fontWeight: '600' }}>{progress}</Text>
               </>
-            ) : (
-              <Text style={{ color: colors.bg, fontSize: 13, fontWeight: '600' }}>
-                📂 Upload Book
-              </Text>
             )}
           </Pressable>
         </View>
 
-        {books.length === 0 ? (
+        {userBooks.length === 0 ? (
           <View style={{
             backgroundColor: colors.card,
             borderRadius: 20,
@@ -276,7 +295,7 @@ export default function LibraryScreen() {
           </View>
         ) : (
           <View style={{ gap: 12 }}>
-            {books.map((book) => (
+            {userBooks.map((book) => (
               <View
                 key={book.id}
                 style={{
