@@ -243,6 +243,10 @@ export default function LibraryScreen() {
                 <ActivityIndicator size="small" color={colors.bg} />
                 <Text style={{ color: colors.bg, fontSize: 13, fontWeight: '600' }}>{progress}</Text>
               </>
+            ) : (
+              <Text style={{ color: colors.bg, fontSize: 13, fontWeight: '600' }}>
+                📂 Upload Book
+              </Text>
             )}
           </Pressable>
         </View>
