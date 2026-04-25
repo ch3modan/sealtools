@@ -68,10 +68,27 @@ export default function ReaderScreen() {
     }
   }, [currentWordIndex, isPlaying]);
 
-  // TTS: speak each word as it's displayed
+  // TTS: speak chunk by chunk (sentence by sentence) to prevent TTS queue lag
   useEffect(() => {
     if (ttsEnabled && isPlaying && currentWord && currentWordIndex !== prevWordIndexRef.current) {
-      speakWord(currentWord.original);
+      const wordsArray = useReaderStore.getState().words;
+      // Start a new sentence if we are at index 0 or the previous word ended a sentence
+      const prevWord = currentWordIndex > 0 ? wordsArray[currentWordIndex - 1] : null;
+      const isStartOfSentence = currentWordIndex === 0 || (prevWord && /[.!?]$/.test(prevWord));
+      
+      if (isStartOfSentence) {
+        // Find the length of the current sentence
+        let count = 1;
+        while (
+          currentWordIndex + count < wordsArray.length &&
+          !/[.!?]$/.test(wordsArray[currentWordIndex + count - 1])
+        ) {
+          count++;
+        }
+        
+        // Speak the sentence chunk
+        speakSentence(wordsArray, currentWordIndex, count);
+      }
     }
     prevWordIndexRef.current = currentWordIndex;
   }, [currentWordIndex, isPlaying, ttsEnabled]);
@@ -86,11 +103,13 @@ export default function ReaderScreen() {
   const currentBook = books.find(b => b.id === currentBookId) || books[0];
 
   const handleWordSelect = (wordIndex: number) => {
+    stopTTS();
     seekTo(wordIndex);
     setOverlay('none');
   };
 
   const handleBookmarkSeek = (wordIndex: number) => {
+    stopTTS();
     seekTo(wordIndex);
     setOverlay('none');
   };
