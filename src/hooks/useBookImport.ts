@@ -120,9 +120,10 @@ export function useBookImport() {
 
           // Uploading the raw file to Blob Storage could be done here using metaRes.uploadUrl
           // For now, we only need the text in Cosmos DB for reading across devices.
-        } catch (e) {
+        } catch (e: any) {
           console.error('Failed to sync to cloud:', e);
-          // If cloud sync fails, we still proceed with local creation
+          // We still proceed with local creation, but warn the user
+          setState(prev => ({ ...prev, error: `Book saved locally, but cloud sync failed: ${e.message}` }));
         }
       }
 
