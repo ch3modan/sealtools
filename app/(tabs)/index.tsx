@@ -23,7 +23,7 @@ She opened her book and began to read, one word at a time, letting each one land
 export default function LibraryScreen() {
   const { colorProfile } = useSettingsStore();
   const colors = COLOR_PROFILES[colorProfile];
-  const { books, addBook } = useLibraryStore();
+  const { books, addBook, removeBook } = useLibraryStore();
   const { currentStreak, todayWordsRead, dailyGoal } = useStreakStore();
   const { pickAndImportFile, isImporting, progress, error } = useBookImport();
   const router = useRouter();
@@ -235,40 +235,62 @@ export default function LibraryScreen() {
         ) : (
           <View style={{ gap: 12 }}>
             {books.map((book) => (
-              <Pressable
+              <View
                 key={book.id}
-                onPress={() => handleOpenBook(book.id)}
                 style={{
                   backgroundColor: colors.card,
                   borderRadius: 16,
-                  padding: 16,
                   flexDirection: 'row',
                   alignItems: 'center',
-                  gap: 16,
                   borderWidth: 1,
                   borderColor: colors.border,
+                  overflow: 'hidden',
                 }}
               >
-                <View style={{
-                  width: 48,
-                  height: 64,
-                  backgroundColor: book.fileType === 'pdf' ? '#FF634722' : '#48CAE422',
-                  borderRadius: 8,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}>
-                  <Text style={{ fontSize: 24 }}>{book.fileType === 'pdf' ? '📕' : '📗'}</Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600' }} numberOfLines={1}>
-                    {book.title}
-                  </Text>
-                  <Text style={{ color: colors.text, fontSize: 13, opacity: 0.5 }}>
-                    {book.author} · {book.totalWords.toLocaleString()} words · {book.chapters.length} ch.
-                  </Text>
-                </View>
-                <Text style={{ color: colors.accent, fontSize: 18 }}>→</Text>
-              </Pressable>
+                <Pressable
+                  onPress={() => handleOpenBook(book.id)}
+                  style={{
+                    flex: 1,
+                    padding: 16,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 16,
+                  }}
+                >
+                  <View style={{
+                    width: 48,
+                    height: 64,
+                    backgroundColor: book.fileType === 'pdf' ? '#FF634722' : '#48CAE422',
+                    borderRadius: 8,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}>
+                    <Text style={{ fontSize: 24 }}>{book.fileType === 'pdf' ? '📕' : '📗'}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600' }} numberOfLines={1}>
+                      {book.title}
+                    </Text>
+                    <Text style={{ color: colors.text, fontSize: 13, opacity: 0.5 }}>
+                      {book.author} · {book.totalWords.toLocaleString()} words · {book.chapters.length} ch.
+                    </Text>
+                  </View>
+                </Pressable>
+                
+                <Pressable
+                  onPress={() => removeBook(book.id)}
+                  style={{
+                    padding: 16,
+                    height: '100%',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    borderLeftWidth: 1,
+                    borderLeftColor: colors.border,
+                  }}
+                >
+                  <Text style={{ fontSize: 20 }}>🗑️</Text>
+                </Pressable>
+              </View>
             ))}
           </View>
         )}
